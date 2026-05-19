@@ -3,7 +3,7 @@ package ec.edu.puce.githubclient.ui.theme.model
 import com.google.gson.annotations.SerializedName
 
 data class Repo(
-    val id: Long,
+    val id: String,
     val name: String,
     val description: String?,
     val language: String?,

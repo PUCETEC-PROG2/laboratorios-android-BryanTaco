@@ -13,7 +13,7 @@ interface GithubApiService {
     suspend fun getRepos(
         @Path("username") username: String,
         @Query("sort") sort: String = "updated",
-        @Query("per_page") perPage: Int = 4
+        @Query("per_page") perPage: Int = 10
     ): List<Repo>
 }
 
