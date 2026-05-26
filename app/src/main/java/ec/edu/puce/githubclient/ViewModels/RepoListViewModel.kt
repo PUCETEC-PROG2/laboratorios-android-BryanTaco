@@ -1,9 +1,9 @@
-package ec.edu.puce.githubclient.ui.theme.viewmodel
+package ec.edu.puce.githubclient.ViewModels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import ec.edu.puce.githubclient.ui.theme.model.Repo
-import ec.edu.puce.githubclient.ui.theme.network.RetrofitInstance
+import ec.edu.puce.githubclient.models.Repo
+import ec.edu.puce.githubclient.Services.RetrofitInstance
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -14,7 +14,7 @@ sealed class RepoUiState {
     data class Error(val message: String) : RepoUiState()
 }
 
-class RepoViewModel : ViewModel() {
+class RepoListViewModel : ViewModel() {
 
     private val _uiState = MutableStateFlow<RepoUiState>(RepoUiState.Loading)
     val uiState: StateFlow<RepoUiState> = _uiState

@@ -1,6 +1,6 @@
-package ec.edu.puce.githubclient.ui.theme.components
+package ec.edu.puce.githubclient.ui.Components
 
-import ec.edu.puce.githubclient.ui.theme.model.Repo
+import ec.edu.puce.githubclient.models.Repo
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*

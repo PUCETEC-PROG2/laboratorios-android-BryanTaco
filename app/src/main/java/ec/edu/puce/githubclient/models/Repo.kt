@@ -1,9 +1,9 @@
-package ec.edu.puce.githubclient.ui.theme.model
+package ec.edu.puce.githubclient.models
 
 import com.google.gson.annotations.SerializedName
 
 data class Repo(
-    val id: String,
+    val id: Long,
     val name: String,
     val description: String?,
     val language: String?,
