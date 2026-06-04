@@ -2,218 +2,241 @@ package ec.edu.puce.githubclient.ui.Screens
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
-import androidx.compose.animation.slideInVertically
-import androidx.compose.foundation.background
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.DriveFileRenameOutline
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RepoForm(
+fun RepoFormScreen(
+    isEdit: Boolean,
+    initialName: String = "",
+    initialDescription: String = "",
+    isLoading: Boolean = false,
     onDismiss: () -> Unit,
-    onConfirm: (String, String) -> Unit
+    onConfirm: (name: String, description: String) -> Unit
 ) {
-    var nombre by remember { mutableStateOf("") }
-    var descripcion by remember { mutableStateOf("") }
-    var nombreError by remember { mutableStateOf(false) }
-    var visible by remember { mutableStateOf(false) }
+    var name by remember { mutableStateOf(initialName) }
+    var description by remember { mutableStateOf(initialDescription) }
+    var nameError by remember { mutableStateOf<String?>(null) }
+    val focusManager = LocalFocusManager.current
+    val scrollState = rememberScrollState()
 
-    LaunchedEffect(Unit) { visible = true }
+    val primaryColor = Color(0xFF5E5BA7)
+    val secondaryTextColor = Color(0xFF757575)
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = "Nuevo Repositorio",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 20.sp
+                        text = if (isEdit) "Configuración del Repo" else "Nuevo Repositorio",
+                        style = TextStyle(
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            letterSpacing = 0.5.sp
+                        )
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onDismiss) {
+                    IconButton(onClick = onDismiss, enabled = !isLoading) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Volver",
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                            contentDescription = "Regresar",
+                            tint = primaryColor
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = Color.White,
+                    titleContentColor = Color.Black
                 )
             )
-        }
-    ) { innerPadding ->
-
-        AnimatedVisibility(
-            visible = visible,
-            enter = fadeIn() + slideInVertically(initialOffsetY = { it / 4 })
+        },
+        containerColor = Color.White
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+                .verticalScroll(scrollState)
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
+            // Icono de cabecera decorativo
+            Surface(
+                modifier = Modifier.size(80.dp),
+                shape = RoundedCornerShape(20.dp),
+                color = primaryColor.copy(alpha = 0.1f)
             ) {
-
-                // Banner informativo
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.primaryContainer)
-                        .padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
+                Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        imageVector = Icons.Default.Info,
+                        imageVector = if (isEdit) Icons.Outlined.Info else Icons.Outlined.DriveFileRenameOutline,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Text(
-                        text = "El repositorio se agregará localmente a tu lista.",
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                        modifier = Modifier.size(40.dp),
+                        tint = primaryColor
                     )
                 }
+            }
 
-                // Sección Nombre
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(
-                        text = "Nombre *",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    OutlinedTextField(
-                        value = nombre,
-                        onValueChange = {
-                            nombre = it
-                            nombreError = false
-                        },
-                        placeholder = { Text("ej. mi-proyecto-android") },
-                        singleLine = true,
-                        isError = nombreError,
-                        trailingIcon = {
-                            if (nombre.isNotEmpty()) {
-                                IconButton(onClick = { nombre = "" }) {
-                                    Icon(
-                                        Icons.Default.Close,
-                                        contentDescription = "Limpiar",
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            }
-                        },
-                        supportingText = {
-                            if (nombreError) {
-                                Text(
-                                    "Este campo es obligatorio",
-                                    color = MaterialTheme.colorScheme.error
-                                )
-                            } else {
-                                Text(
-                                    "${nombre.length}/50 caracteres",
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        },
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
+            Spacer(modifier = Modifier.height(16.dp))
 
-                // Sección Descripción
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(
-                        text = "Descripción",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    OutlinedTextField(
-                        value = descripcion,
-                        onValueChange = { if (it.length <= 200) descripcion = it },
-                        placeholder = { Text("Describe brevemente tu proyecto...") },
-                        minLines = 4,
-                        maxLines = 6,
-                        supportingText = {
-                            Text(
-                                "${descripcion.length}/200 caracteres",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        },
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
+            Text(
+                text = if (isEdit) "Actualiza los detalles de tu proyecto" else "Comienza un nuevo proyecto en GitHub",
+                style = TextStyle(fontSize = 14.sp, color = secondaryTextColor),
+                modifier = Modifier.padding(bottom = 32.dp)
+            )
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Botones
-                Row(
+            // Sección del Nombre
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "Nombre del repositorio",
+                    style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Bold, color = primaryColor),
+                    modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+                )
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = {
+                        if (!isEdit) {
+                            name = it
+                            nameError = if (it.isBlank()) "El nombre es obligatorio" else null
+                        }
+                    },
+                    placeholder = { Text("ej. mi-proyecto-increible", color = Color.LightGray) },
+                    enabled = !isEdit && !isLoading,
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    leadingIcon = { Icon(Icons.Outlined.DriveFileRenameOutline, contentDescription = null, tint = primaryColor) },
+                    isError = nameError != null,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = primaryColor,
+                        unfocusedBorderColor = Color.LightGray,
+                        disabledBorderColor = Color(0xFFF5F5F5),
+                        disabledTextColor = Color.Gray,
+                        errorBorderColor = Color.Red
+                    ),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
+                )
+                
+                AnimatedVisibility(
+                    visible = nameError != null || isEdit,
+                    enter = fadeIn(),
+                    exit = fadeOut()
                 ) {
-                    OutlinedButton(
-                        onClick = onDismiss,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(52.dp),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text("Cancelar", fontWeight = FontWeight.Medium)
-                    }
+                    Text(
+                        text = nameError ?: "El nombre no se puede cambiar después de creado",
+                        color = if (nameError != null) Color.Red else secondaryTextColor,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(top = 6.dp, start = 8.dp)
+                    )
+                }
+            }
 
-                    Button(
-                        onClick = {
-                            if (nombre.isBlank()) {
-                                nombreError = true
-                            } else {
-                                onConfirm(nombre.trim(), descripcion.trim())
-                            }
-                        },
-                        modifier = Modifier
-                            .weight(2f)
-                            .height(52.dp),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Send,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Sección de la Descripción
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "Descripción (Opcional)",
+                    style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Bold, color = primaryColor),
+                    modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+                )
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { if (it.length <= 150) description = it },
+                    placeholder = { Text("¿De qué trata este repositorio?", color = Color.LightGray) },
+                    enabled = !isLoading,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    leadingIcon = { Icon(Icons.Outlined.Description, contentDescription = null, tint = primaryColor) },
+                    minLines = 3,
+                    maxLines = 5,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = primaryColor,
+                        unfocusedBorderColor = Color.LightGray
+                    ),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                    supportingText = {
                         Text(
-                            text = "Guardar",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold
+                            text = "${description.length}/150 caracteres",
+                            modifier = Modifier.fillMaxWidth(),
+                            style = TextStyle(fontSize = 10.sp, color = secondaryTextColor)
+                        )
+                    }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(48.dp))
+
+            // Botones de Acción
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onDismiss,
+                    enabled = !isLoading,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(54.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.5.dp, Color.LightGray)
+                ) {
+                    Text("Cancelar", style = TextStyle(fontWeight = FontWeight.SemiBold, color = Color.Gray))
+                }
+
+                Button(
+                    onClick = {
+                        if (!isEdit && name.isBlank()) {
+                            nameError = "El nombre es obligatorio"
+                            return@Button
+                        }
+                        onConfirm(name, description)
+                    },
+                    enabled = !isLoading,
+                    modifier = Modifier
+                        .weight(1.2f)
+                        .height(54.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = primaryColor),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp)
+                    } else {
+                        Text(
+                            text = if (isEdit) "Actualizar" else "Crear Repo",
+                            style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold)
                         )
                     }
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }

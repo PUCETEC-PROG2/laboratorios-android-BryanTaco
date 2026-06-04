@@ -1,11 +1,12 @@
 package ec.edu.puce.githubclient.models
 
 import com.google.gson.annotations.SerializedName
-import kotlinx.serialization.Serializer
 
 data class GithubUser(
-    val id: String,
-    val login: String,
-    @SerializedName(value="avatar_url")
-    val avatarUrl: String
+    @SerializedName("login") val login: String = "",
+    @SerializedName("id") val id: Long = 0,
+    @SerializedName("avatar_url") val avatarUrl: String = "",
+    @SerializedName("name") val name: String? = null,
+    @SerializedName("bio") val bio: String? = null,
+    @SerializedName("public_repos") val publicRepos: Int = 0
 )
