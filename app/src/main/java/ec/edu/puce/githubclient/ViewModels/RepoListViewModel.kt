@@ -2,9 +2,12 @@ package ec.edu.puce.githubclient.ViewModels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import ec.edu.puce.githubclient.BuildConfig
+import ec.edu.puce.githubclient.Services.ApiService
 import ec.edu.puce.githubclient.models.GithubUser
 import ec.edu.puce.githubclient.models.Repo
-import kotlinx.coroutines.delay
+import ec.edu.puce.githubclient.models.RepositoryPayload
+import ec.edu.puce.githubclient.models.UpdateRepoPayload
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -22,104 +25,99 @@ class RepoViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(RepoUiState())
     val uiState: StateFlow<RepoUiState> = _uiState
 
-    // Datos estáticos (hardcoded) iniciales como pide el laboratorio
-    private val staticUser = GithubUser(
-        login = "EstudiantePUCE",
-        avatarUrl = "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
-    )
-
-    private val initialRepos = mutableListOf(
-        Repo(
-            id = 1,
-            name = "examen-parcial-django-vistas-templates-y-modelos-jonathantello-star",
-            description = "desarrollo-web-2026-1-examen-parcial-django-vistas-templates-y-modelos-pucetec-prog2-202402-examen-p created by GitHub Classroom",
-            language = "Python",
-            owner = staticUser
-        ),
-        Repo(
-            id = 2,
-            name = "examen-parcial-django-vistas-templates-y-modelos-Alan0qwe",
-            description = "desarrollo-web-2026-1-examen-parcial-django-vistas-templates-y-modelos-pucetec-prog2-202402-examen-p created by GitHub Classroom",
-            language = "Python",
-            owner = staticUser
-        ),
-        Repo(
-            id = 3,
-            name = "laboratorio-django-Alan0qwe",
-            description = "pucetec-desarrollo-movil-2026-1-laboratorio-django-lab4-template created by GitHub Classroom",
-            language = "No especificado",
-            owner = staticUser
-        )
-    )
+    // Configuración de la API real
+    private val apiService = ApiService.create()
+    private val token = "Bearer ${BuildConfig.GITHUB_TOKEN}"
 
     init {
-        loadStaticData()
+        loadData()
     }
 
-    private fun loadStaticData() {
+    // CARGAR DATOS REALES DE GITHUB
+    fun loadData() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
-            delay(1000) // Simulamos una pequeña carga
-            _uiState.value = _uiState.value.copy(
-                repos = initialRepos.toList(),
-                user = staticUser,
-                isLoading = false
-            )
-        }
-    }
+            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+            try {
+                // 1. Obtener usuario (para saber quién es el owner)
+                val userRes = apiService.getAuthenticatedUser(token)
+                if (userRes.isSuccessful) {
+                    val user = userRes.body()
+                    _uiState.value = _uiState.value.copy(user = user)
 
-    fun createRepo(name: String, description: String) {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
-            delay(1000) // Simulación de red
-            
-            val newRepo = Repo(
-                id = (initialRepos.maxOfOrNull { it.id } ?: 0) + 1,
-                name = name,
-                description = description,
-                language = "Kotlin",
-                owner = staticUser
-            )
-            
-            initialRepos.add(0, newRepo) // Añadir al inicio
-            _uiState.value = _uiState.value.copy(
-                repos = initialRepos.toList(),
-                isLoading = false,
-                successMessage = "Repositorio '$name' creado (Simulado)"
-            )
-        }
-    }
-
-    fun updateRepo(repoName: String, description: String) {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
-            delay(800)
-            
-            val index = initialRepos.indexOfFirst { it.name == repoName }
-            if (index != -1) {
-                val updatedRepo = initialRepos[index].copy(description = description)
-                initialRepos[index] = updatedRepo
-                
+                    // 2. Obtener sus repositorios
+                    val reposRes = apiService.getUserRepos(token)
+                    if (reposRes.isSuccessful) {
+                        _uiState.value = _uiState.value.copy(
+                            repos = reposRes.body() ?: emptyList(),
+                            isLoading = false
+                        )
+                    }
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        errorMessage = "Error de Token: Verifica que sea válido en local.properties"
+                    )
+                }
+            } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
-                    repos = initialRepos.toList(),
                     isLoading = false,
-                    successMessage = "Repositorio '$repoName' actualizado (Simulado)"
+                    errorMessage = "Sin conexión: ${e.localizedMessage}"
                 )
             }
         }
     }
 
+    // CREAR REAL (POST)
+    fun createRepo(name: String, description: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true)
+            try {
+                val response = apiService.createRepo(token, RepositoryPayload(name, description))
+                if (response.isSuccessful) {
+                    _uiState.value = _uiState.value.copy(successMessage = "Repo '$name' creado en GitHub")
+                    loadData()
+                } else {
+                    _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = "Error al crear")
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = e.localizedMessage)
+            }
+        }
+    }
+
+    // ACTUALIZAR REAL (PATCH)
+    fun updateRepo(oldName: String, newName: String, description: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true)
+            try {
+                val owner = _uiState.value.user?.login ?: return@launch
+                val response = apiService.updateRepo(token, owner, oldName, UpdateRepoPayload(newName, description))
+                if (response.isSuccessful) {
+                    _uiState.value = _uiState.value.copy(successMessage = "Repo actualizado en GitHub")
+                    loadData()
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = e.localizedMessage)
+            }
+        }
+    }
+
+    // ELIMINAR REAL (DELETE)
     fun deleteRepo(repoName: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
-            delay(800)
-            
-            initialRepos.removeAll { it.name == repoName }
-            _uiState.value = _uiState.value.copy(
-                repos = initialRepos.toList(),
-                isLoading = false,
-                successMessage = "Repositorio '$repoName' eliminado (Simulado)"
-            )
+            try {
+                val owner = _uiState.value.user?.login ?: return@launch
+                val response = apiService.deleteRepo(token, owner, repoName)
+                if (response.isSuccessful) {
+                    _uiState.value = _uiState.value.copy(successMessage = "Repo '$repoName' eliminado de GitHub")
+                    loadData()
+                } else {
+                    _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = "Error: ¿El token tiene permiso 'delete_repo'?")
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = e.localizedMessage)
+            }
         }
     }
 

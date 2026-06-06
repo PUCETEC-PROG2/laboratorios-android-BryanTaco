@@ -119,13 +119,11 @@ fun RepoFormScreen(
                 OutlinedTextField(
                     value = name,
                     onValueChange = {
-                        if (!isEdit) {
-                            name = it
-                            nameError = if (it.isBlank()) "El nombre es obligatorio" else null
-                        }
+                        name = it
+                        nameError = if (it.isBlank()) "El nombre es obligatorio" else null
                     },
                     placeholder = { Text("ej. mi-proyecto-increible", color = Color.LightGray) },
-                    enabled = !isEdit && !isLoading,
+                    enabled = !isLoading,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     leadingIcon = { Icon(Icons.Outlined.DriveFileRenameOutline, contentDescription = null, tint = primaryColor) },
@@ -143,13 +141,13 @@ fun RepoFormScreen(
                 )
                 
                 AnimatedVisibility(
-                    visible = nameError != null || isEdit,
+                    visible = nameError != null,
                     enter = fadeIn(),
                     exit = fadeOut()
                 ) {
                     Text(
-                        text = nameError ?: "El nombre no se puede cambiar después de creado",
-                        color = if (nameError != null) Color.Red else secondaryTextColor,
+                        text = nameError ?: "",
+                        color = Color.Red,
                         fontSize = 12.sp,
                         modifier = Modifier.padding(top = 6.dp, start = 8.dp)
                     )

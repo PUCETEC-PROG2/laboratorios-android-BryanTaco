@@ -10,5 +10,6 @@ data class RepositoryPayload(
 )
 
 data class UpdateRepoPayload(
-    @SerializedName("description") val description: String
+    @SerializedName("name") val name: String? = null,
+    @SerializedName("description") val description: String? = null
 )

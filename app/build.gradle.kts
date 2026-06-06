@@ -20,7 +20,7 @@ android {
         if (propertiesFile.exists()) {
             propertiesFile.inputStream().use { properties.load(it) }
         }
-        val githubToken = properties.getProperty("GITHUB_TOKEN") ?: ""
+        val githubToken = (properties.getProperty("GITHUBUSER_TOKEN") ?: "").trim().replace("\"", "").trim()
         // Importante: las comillas escapadas son necesarias para que sea un String en Java/Kotlin
         buildConfigField("String", "GITHUB_TOKEN", "\"$githubToken\"")
     }

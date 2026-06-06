@@ -16,20 +16,23 @@ interface ApiService {
 
     @GET("user")
     suspend fun getAuthenticatedUser(
-        @Header("Authorization") token: String
+        @Header("Authorization") token: String,
+        @Header("User-Agent") userAgent: String = "Github-Client-PUCE"
     ): Response<GithubUser>
 
     @GET("user/repos")
     suspend fun getUserRepos(
         @Header("Authorization") token: String,
         @Query("sort") sort: String = "updated",
-        @Query("per_page") perPage: Int = 50
+        @Query("per_page") perPage: Int = 50,
+        @Header("User-Agent") userAgent: String = "Github-Client-PUCE"
     ): Response<List<Repo>>
 
     @POST("user/repos")
     suspend fun createRepo(
         @Header("Authorization") token: String,
-        @Body body: RepositoryPayload
+        @Body body: RepositoryPayload,
+        @Header("User-Agent") userAgent: String = "Github-Client-PUCE"
     ): Response<Repo>
 
     @PATCH("repos/{owner}/{repo}")
@@ -37,14 +40,16 @@ interface ApiService {
         @Header("Authorization") token: String,
         @Path("owner") owner: String,
         @Path("repo") repoName: String,
-        @Body body: UpdateRepoPayload
+        @Body body: UpdateRepoPayload,
+        @Header("User-Agent") userAgent: String = "Github-Client-PUCE"
     ): Response<Repo>
 
     @DELETE("repos/{owner}/{repo}")
     suspend fun deleteRepo(
         @Header("Authorization") token: String,
         @Path("owner") owner: String,
-        @Path("repo") repoName: String
+        @Path("repo") repoName: String,
+        @Header("User-Agent") userAgent: String = "Github-Client-PUCE"
     ): Response<Unit>
 
     companion object {

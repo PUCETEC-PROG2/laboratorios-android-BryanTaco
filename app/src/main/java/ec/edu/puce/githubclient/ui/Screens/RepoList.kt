@@ -106,8 +106,8 @@ fun RepoList(viewModel: RepoViewModel = viewModel()) {
             initialDescription = repo.description ?: "",
             isLoading = uiState.isLoading,
             onDismiss = { repoToEdit = null },
-            onConfirm = { _, desc ->
-                viewModel.updateRepo(repo.name, desc)
+            onConfirm = { newName, desc ->
+                viewModel.updateRepo(repo.name, newName, desc)
             }
         )
     }
